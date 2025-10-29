@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Medicine Reminder Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .alert-card {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .compliance-card {
+            background: linear-gradient(45deg, #51cf66, #40c057);
+            color: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .late-card {
+            background: linear-gradient(45deg, #ffd43b, #fab005);
+            color: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .log-entry {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-compliance {
+            background: #51cf66;
+            color: white;
+        }
+        
+        .status-missed {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .status-late {
+            background: #ffd43b;
+            color: white;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .device-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .device-online {
+            background: #51cf66;
+            animation: pulse 2s infinite;
+        }
+        
+        .device-offline {
+            background: #ff6b6b;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .header-title {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+        
+        .last-updated {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <h1 class="header-title">
+            <i class="fas fa-pills"></i> IoT Medicine Reminder Dashboard
+        </h1>
+        
+        <!-- Device Status -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="dashboard-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="device-status device-online" id="deviceStatus"></span>
+                            <strong>ESP32 Medicine Reminder Device</strong>
+                            <span class="ms-2 text-muted" id="deviceId">ESP32_MED_REMINDER_001</span>
+                        </div>
+                        <button class="btn refresh-btn" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="complianceRate">0%</div>
+                    <div class="stat-label">Compliance Rate</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalLogs">0</div>
+                    <div class="stat-label">Total Logs</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="missedCount">0</div>
+                    <div class="stat-label">Missed Doses</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="lateCount">0</div>
+                    <div class="stat-label">Late Doses</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="row">
+            <!-- Recent Logs -->
+            <div class="col-md-8">
+                <div class="dashboard-card p-4">
+                    <h4><i class="fas fa-history"></i> Recent Medicine Logs</h4>
+                    <div class="last-updated mb-3">
+                        Last updated: <span id="lastUpdated">-</span>
+                    </div>
+                    <div id="recentLogs">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin"></i> Loading logs...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alerts and Status -->
+            <div class="col-md-4">
+                <!-- Recent Alerts -->
+                <div class="dashboard-card p-4 mb-4">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Recent Alerts</h5>
+                    <div id="recentAlerts">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin"></i> Loading alerts...
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Medicine Schedule -->
+                <div class="dashboard-card p-4">
+                    <h5><i class="fas fa-calendar-alt"></i> Medicine Schedule</h5>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>MedA (2 pills)</span>
+                            <span class="badge bg-primary">09:00 AM</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>MedB (1 pill)</span>
+                            <span class="badge bg-primary">02:30 PM</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>MedC (1 pill)</span>
+                            <span class="badge bg-primary">09:00 PM</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let lastUpdateTime = null;
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+            // Auto-refresh every 30 seconds
+            setInterval(refreshData, 30000);
+        });
+        
+        async function refreshData() {
+            try {
+                // Update last updated time
+                lastUpdateTime = new Date();
+                document.getElementById('lastUpdated').textContent = lastUpdateTime.toLocaleTimeString();
+                
+                // Fetch all data in parallel
+                const [logsResponse, statsResponse, alertsResponse] = await Promise.all([
+                    fetch('/api/medicine-logs'),
+                    fetch('/api/compliance-stats?days=all'),
+                    fetch('/api/recent-alerts')
+                ]);
+                
+                const logs = await logsResponse.json();
+                const stats = await statsResponse.json();
+                const alerts = await alertsResponse.json();
+                
+                // Update statistics
+                updateStatistics(stats);
+                
+                // Update recent logs
+                updateRecentLogs(logs);
+                
+                // Update recent alerts
+                updateRecentAlerts(alerts);
+                
+                // Update device status
+                updateDeviceStatus(logs);
+                
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                showError('Failed to refresh data. Please try again.');
+            }
+        }
+        
+        function updateStatistics(stats) {
+            document.getElementById('complianceRate').textContent = stats.complianceRate + '%';
+            document.getElementById('totalLogs').textContent = stats.totalLogs;
+            document.getElementById('missedCount').textContent = stats.missedCount;
+            document.getElementById('lateCount').textContent = stats.lateCount;
+        }
+        
+        function updateRecentLogs(logs) {
+            const logsContainer = document.getElementById('recentLogs');
+            
+            if (logs.length === 0) {
+                logsContainer.innerHTML = '<div class="text-center text-muted">No logs available</div>';
+                return;
+            }
+            
+            logsContainer.innerHTML = logs.slice(0, 10).map(log => `
+                <div class="log-entry">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="status-badge status-${log.status.toLowerCase()}">${log.status}</span>
+                            <strong class="ms-2">${log.medicine}</strong>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">${log.time}</div>
+                            <div class="text-muted small">${log.date}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function updateRecentAlerts(alerts) {
+            const alertsContainer = document.getElementById('recentAlerts');
+            
+            if (alerts.length === 0) {
+                alertsContainer.innerHTML = '<div class="text-center text-success"><i class="fas fa-check-circle"></i><br>No recent alerts</div>';
+                return;
+            }
+            
+            alertsContainer.innerHTML = alerts.map(alert => `
+                <div class="alert-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>${alert.medicine}</strong>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">${alert.time}</div>
+                            <div class="small">${alert.date}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function updateDeviceStatus(logs) {
+            const deviceStatus = document.getElementById('deviceStatus');
+            
+            // Check if there's a recent log (within last 5 minutes)
+            const recentLog = logs.find(log => {
+                const logTime = new Date(log.createdAt);
+                const now = new Date();
+                return (now - logTime) < 5 * 60 * 1000; // 5 minutes
+            });
+            
+            if (recentLog) {
+                deviceStatus.className = 'device-status device-online';
+            } else {
+                deviceStatus.className = 'device-status device-offline';
+            }
+        }
+        
+        function showError(message) {
+            // Create a temporary error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            errorDiv.style.top = '20px';
+            errorDiv.style.right = '20px';
+            errorDiv.style.zIndex = '9999';
+            errorDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(errorDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.parentNode.removeChild(errorDiv);
+                }
+            }, 5000);
+        }
+        
+        // Format time for display
+        function formatTime(timestamp) {
+            return new Date(timestamp).toLocaleTimeString();
+        }
+        
+        // Format date for display
+        function formatDate(timestamp) {
+            return new Date(timestamp).toLocaleDateString();
+        }
+    </script>
+</body>
+</html>
