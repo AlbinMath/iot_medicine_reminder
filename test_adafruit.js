@@ -2,8 +2,8 @@
 const AdafruitIO = require('adafruit-io');
 
 // Adafruit IO Configuration
-const username = 'albinma';
-const key = 'aio_zKxp16y50AnTzGPxYv2zc5QYc0iT';
+const username = 'YOUR_ADAFRUIT_IO_USERNAME';
+const key = 'YOUR_ADAFRUIT_IO_KEY';
 
 console.log('Testing Adafruit IO connection...');
 
@@ -24,8 +24,8 @@ console.log(`
 
 #define IO_SERVER         "io.adafruit.com"
 #define IO_SERVERPORT     1883
-#define IO_USERNAME       "${username}"
-#define IO_KEY            "${key}"
+#define IO_USERNAME       "YOUR_ADAFRUIT_IO_USERNAME"
+#define IO_KEY            "YOUR_ADAFRUIT_IO_KEY"
 
 WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, IO_SERVER, IO_SERVERPORT, IO_USERNAME, IO_KEY);
@@ -51,7 +51,7 @@ async function sendToAdafruitIO(feedName, value) {
       { value: value },
       {
         headers: {
-          'X-AIO-Key': '${key}',
+          'X-AIO-Key': 'YOUR_ADAFRUIT_IO_KEY',
           'Content-Type': 'application/json'
         }
       }
